@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Store {
+  id         String      @id @default(uuid())
+  name       String
+  userID     String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  billboards Billboard[]
+  categories Category[]  @relation("storeToCategory")
+  sizes      Size[]      @relation("storeToSize")
+  colors     Color[]     @relation("storeToColor")
+  products   Product[]   @relation("storeToProduct")
+  order      Order[]     @relation("storeToOrder")
+}
+
+model Billboard {
+  id         String     @id @default(uuid())
+  storeId    String
+  store      Store      @relation(fields: [storeId], references: [id])
+  label      String
+  imageUrl   String
+  categories Category[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([storeId])
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String
+  storeId     String
+  store       Store     @relation("storeToCategory", fields: [storeId], references: [id])
+  billboardId String
+  billboard   Billboard @relation(fields: [billboardId], references: [id])
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([storeId])
+  @@index([billboardId])
+}
+
+model Size {
+  id        String    @id @default(uuid())
+  storeId   String
+  store     Store     @relation("storeToSize", fields: [storeId], references: [id])
+  name      String
+  value     String
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Color {
+  id       String    @id @default(uuid())
+  storeId  String
+  store    Store     @relation("storeToColor", fields: [storeId], references: [id])
+  name     String
+  value    String
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id         String       @id @default(uuid())
+  storeId    String
+  store      Store        @relation("storeToProduct", fields: [storeId], references: [id])
+  categoryId String
+  category   Category     @relation(fields: [categoryId], references: [id])
+  sizeId     String
+  size       Size         @relation(fields: [sizeId], references: [id])
+  colorId    String
+  color      Color        @relation(fields: [colorId], references: [id])
+  name       String
+  price      Int
+  isFeatured Boolean      @default(false)
+  isArchived Boolean      @default(false)
+  images     String[]
+  orderItems OrderItems[]
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([storeId])
+  @@index([categoryId])
+  @@index([sizeId])
+  @@index([colorId])
+}
+
+// model Image {
+//   id        String   @id @default(uuid())
+//   productId String
+//   product   Product  @relation(fields: [productId], references: [id])
+//   url       String
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+// }
+
+model Order {
+  id         String       @id @default(uuid())
+  storeId    String
+  store      Store        @relation("storeToOrder", fields: [storeId], references: [id])
+  orderItems OrderItems[]
+  isPaid     Boolean
+  phone      String
+  address    String
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([storeId])
+}
+
+model OrderItems {
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id])
+  quantity  Int
+}
