@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import domin from "@/lib/domin";
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 import toast from "react-hot-toast";
 import { useState } from "react";
 import {

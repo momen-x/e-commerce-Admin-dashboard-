@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 /**
  * @method POST
- * @description Create a new category for a store 
+ * @description Create a new category for a store
  * @route ~/api/[:storeId]/category
  * @access Private (Requires authentication)
  */
@@ -100,6 +100,9 @@ export async function GET(
     }
     const categories = await prisma.category.findMany({
       where: { storeId: storeId },
+      include: {
+        billboard: true,
+      },
     });
     return NextResponse.json({ categories }, { status: 200 });
   } catch (error) {

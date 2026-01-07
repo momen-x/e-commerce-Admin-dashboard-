@@ -26,6 +26,9 @@ export async function GET(
       where: {
         id: id,
       },
+      include: {
+        billboard: true,
+      },
     });
     return NextResponse.json({ category }, { status: 200 });
   } catch (error) {

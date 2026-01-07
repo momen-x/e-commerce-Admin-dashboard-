@@ -47,6 +47,9 @@ export const useAddSize = (): UseMutationResult<
       queryClient.invalidateQueries({
         queryKey: ["size", variables.storeId],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["sizes", variables.storeId],
+      });
     },
 
     onError: (error) => {
