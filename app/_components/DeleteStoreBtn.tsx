@@ -40,11 +40,7 @@ const DeleteStoreBtn = ({
       setTimeout(() => window.location.reload(), 1000);
     } catch (error) {
       console.error("Delete error:", error);
-      toast.error(
-        error instanceof AxiosError
-          ? error.response?.data?.message
-          : "Failed to delete store"
-      );
+      toast.error("Failed to delete store");
     } finally {
       setIsDeleting(false);
     }

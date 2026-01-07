@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
-import {AddStore} from "@/Validations/validation";
+import { AddStore } from "@/Validations/validation";
 
 /**
  * @method DELETE
@@ -37,6 +37,14 @@ export async function DELETE(
     if (!isTheUserHaveTheStore) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
+    await prisma.product.deleteMany({ where: { storeId: String(id) } });
+    // await prisma.orderItems.deleteMany({ where: { orderId: String(id) } });
+    await prisma.order.deleteMany({ where: { storeId: String(id) } });
+    await prisma.category.deleteMany({ where: { storeId: String(id) } });
+    await prisma.billboard.deleteMany({ where: { storeId: String(id) } });
+    await prisma.size.deleteMany({ where: { storeId: String(id) } });
+    await prisma.color.deleteMany({ where: { storeId: String(id) } });
+
     await prisma.store.delete({ where: { id: String(id), userID: userId } });
     return NextResponse.json(
       { message: "deleted successfully" },
@@ -66,14 +74,13 @@ export async function PUT(
   try {
     const { userId } = await auth();
     const { id } = await params;
- 
+
     if (!userId) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
     const body = await req.json();
 
     const validation = AddStore.safeParse(body);
-      
 
     if (!validation.success) {
       return NextResponse.json(
@@ -88,7 +95,6 @@ export async function PUT(
     const { name } = validation.data;
 
     const isStore = await prisma.store.findFirst({ where: { id: String(id) } });
-     
 
     if (!isStore) {
       return NextResponse.json(
@@ -109,7 +115,6 @@ export async function PUT(
     const isUserHaveTheStore = await prisma.store.findFirst({
       where: { userID: userId, id: String(id) },
     });
-      
 
     if (!isUserHaveTheStore) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 400 });
@@ -117,7 +122,7 @@ export async function PUT(
 
     const store = await prisma.store.update({
       where: { userID: userId, id: String(id) },
-      data: { name},
+      data: { name },
     });
 
     return NextResponse.json({ store }, { status: 203 });
@@ -132,8 +137,7 @@ export async function PUT(
   }
 }
 
-
-/** 
+/**
  * @method GET
  * @description get a store by ID
  * @access private just the owner of store can get his store
@@ -149,7 +153,7 @@ export async function GET(
     if (!userId) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
-    if (!id) {  
+    if (!id) {
       return NextResponse.json({ message: "invalied id" }, { status: 400 });
     }
     const store = await prisma.store.findFirst({
@@ -168,6 +172,5 @@ export async function GET(
       },
       { status: 500 }
     );
-  } 
+  }
 }
-
