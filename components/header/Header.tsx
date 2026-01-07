@@ -26,7 +26,6 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 
-// import logo from "@/app/assets/logo.png";
 import CreateStoreBtn from "@/app/_components/CreateStoreBtn";
 
 const pages = [
@@ -44,8 +43,7 @@ const pages = [
 const Header = ({ isUser }: { isUser: boolean }) => {
   const params = useParams();
   const storeId = params?.storeId as string | undefined;
-  
-  
+
   const router = useRouter();
   const pathname = usePathname();
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -66,11 +64,12 @@ const Header = ({ isUser }: { isUser: boolean }) => {
 
   const isActive = (path: string) => {
     if (path === "") {
-      // Home is active only on exact store root
       return pathname === `/store/${storeId}`;
     }
-    // Check if current path matches the page path
-    return pathname === `/store/${storeId}${path}` || pathname.startsWith(`/store/${storeId}${path}/`);
+    return (
+      pathname === `/store/${storeId}${path}` ||
+      pathname.startsWith(`/store/${storeId}${path}/`)
+    );
   };
 
   const getPagePath = (path: string) => {
@@ -84,56 +83,40 @@ const Header = ({ isUser }: { isUser: boolean }) => {
       <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         {/* Logo/Brand */}
         <div className="flex items-center gap-8">
-            {/* Logo/Brand */}
-        <div className="flex items-center gap-2">
-          <Store className="h-6 w-6" />
-          <span className="font-bold text-xl">Admin Dashboard</span>
-        </div>
-          {/* <div
-            onClick={() => router.push("/")}
-            className="flex items-center gap-2 cursor-pointer group"
-          >
-            <div className="relative">
-              <img
-                src={logo.src}
-                alt="logo"
-                className="h-9 w-12 text-primary transition-transform group-hover:scale-110"
-              />
-              <div className="absolute -inset-1 bg-primary/20 rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-            <h1 className="text-xl font-bold bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              eCom Admin Dashboard
-            </h1>
-          </div> */}
+          <div className="flex items-center gap-2">
+            <Store className="h-6 w-6" />
+            <span className="font-bold text-xl">Admin Dashboard</span>
+          </div>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1">
             {isUser && <CreateStoreBtn />}
-            {storeId && pages.map((page) => {
-              const pagePath = getPagePath(page.path);
-              const active = isActive(page.path);
-              const Icon = page.icon;
+            {storeId &&
+              pages.map((page) => {
+                const pagePath = getPagePath(page.path);
+                const active = isActive(page.path);
+                const Icon = page.icon;
 
-              return (
-                <Button
-                  key={page.path}
-                  onClick={() => router.push(pagePath)}
-                  variant="ghost"
-                  className={cn(
-                    "relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
-                    active
-                      ? "text-primary bg-primary/10"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{page.label}</span>
-                  {active && (
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-0.5 bg-primary rounded-full" />
-                  )}
-                </Button>
-              );
-            })}
+                return (
+                  <Button
+                    key={page.path}
+                    onClick={() => router.push(pagePath)}
+                    variant="ghost"
+                    className={cn(
+                      "relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+                      active
+                        ? "text-primary bg-primary/10"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{page.label}</span>
+                    {active && (
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-0.5 bg-primary rounded-full" />
+                    )}
+                  </Button>
+                );
+              })}
           </nav>
         </div>
 
@@ -154,31 +137,35 @@ const Header = ({ isUser }: { isUser: boolean }) => {
         </div>
       </div>
 
-      {/* Mobile Navigation */}
+      {/* Mobile Navigation - FIXED: All items on one line without scroll */}
       {storeId && (
-        <nav className="flex border-t md:hidden bg-background overflow-x-auto">
-          {pages.slice(0, 5).map((page) => {
+        <nav className="grid grid-cols-9 border-t md:hidden bg-background">
+          {pages.map((page) => {
             const pagePath = getPagePath(page.path);
             const active = isActive(page.path);
             const Icon = page.icon;
 
             return (
-              <button
+              <Button
                 key={page.path}
                 onClick={() => router.push(pagePath)}
                 className={cn(
-                  "flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-colors relative min-w-[60px]",
+                  "flex flex-col items-center justify-center gap-0.5 py-2 h-full relative rounded-none",
                   active
-                    ? "text-primary"
-                    : "text-muted-foreground active:bg-accent"
+                    ? "text-primary bg-primary/5"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
                 )}
+                variant="ghost"
+                size="sm"
               >
-                <Icon className="h-5 w-5" />
-                <span className="text-xs font-medium">{page.label}</span>
+                <Icon className="h-4 w-4" />
+                <span className="text-[10px] font-medium leading-tight px-0.5">
+                  {page.label}
+                </span>
                 {active && (
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-primary rounded-b-full" />
+                  <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary" />
                 )}
-              </button>
+              </Button>
             );
           })}
         </nav>

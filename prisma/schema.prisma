@@ -24,7 +24,7 @@ model Store {
 model Billboard {
   id         String     @id @default(uuid())
   storeId    String
-  store      Store      @relation(fields: [storeId], references: [id])
+  store      Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
   label      String
   imageUrl   String
   categories Category[]
@@ -38,7 +38,7 @@ model Category {
   id          String    @id @default(uuid())
   name        String
   storeId     String
-  store       Store     @relation("storeToCategory", fields: [storeId], references: [id])
+  store       Store     @relation("storeToCategory", fields: [storeId], references: [id], onDelete: Cascade)
   billboardId String
   billboard   Billboard @relation(fields: [billboardId], references: [id])
   products    Product[]
@@ -52,7 +52,7 @@ model Category {
 model Size {
   id        String    @id @default(uuid())
   storeId   String
-  store     Store     @relation("storeToSize", fields: [storeId], references: [id])
+  store     Store     @relation("storeToSize", fields: [storeId], references: [id], onDelete: Cascade)
   name      String
   value     String
   products  Product[]
@@ -63,7 +63,7 @@ model Size {
 model Color {
   id       String    @id @default(uuid())
   storeId  String
-  store    Store     @relation("storeToColor", fields: [storeId], references: [id])
+  store    Store     @relation("storeToColor", fields: [storeId], references: [id], onDelete: Cascade)
   name     String
   value    String
   products Product[]
@@ -75,7 +75,7 @@ model Color {
 model Product {
   id         String       @id @default(uuid())
   storeId    String
-  store      Store        @relation("storeToProduct", fields: [storeId], references: [id])
+  store      Store        @relation("storeToProduct", fields: [storeId], references: [id], onDelete: Cascade)
   categoryId String
   category   Category     @relation(fields: [categoryId], references: [id])
   sizeId     String
@@ -109,7 +109,7 @@ model Product {
 model Order {
   id         String       @id @default(uuid())
   storeId    String
-  store      Store        @relation("storeToOrder", fields: [storeId], references: [id])
+  store      Store        @relation("storeToOrder", fields: [storeId], references: [id], onDelete: Cascade)
   orderItems OrderItems[]
   isPaid     Boolean
   phone      String
