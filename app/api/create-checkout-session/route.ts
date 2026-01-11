@@ -37,10 +37,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate environment variable
-    if (!process.env.NEXT_PUBLIC_APP_URL) {
-      throw new Error("NEXT_PUBLIC_APP_URL is not defined");
-    }
+    // // Validate environment variable
+    // if (!process.env.NEXT_PUBLIC_APP_URL) {
+    //   throw new Error("NEXT_PUBLIC_APP_URL is not defined");
+    // }
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({

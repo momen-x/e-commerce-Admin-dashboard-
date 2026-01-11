@@ -56,9 +56,12 @@ const OrderPage = async ({
                     Create
                   </h4>
                   <APIAlert
-                    description={`${domin}/api/${storeId}/order`}
+                    description={
+                      "Api url to create order after the user has plased it " +
+                      `${domin}/api/${storeId}/order`
+                    }
                     title="POST"
-                    variant="admin"
+                    variant="public"
                   />
                 </div>
 
@@ -73,16 +76,7 @@ const OrderPage = async ({
                   />
                 </div>
 
-                {/* <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-1">
-                    Update
-                  </h4>
-                  <APIAlert
-                    description={`${domin}/api/${storeId}/order/[id]`}
-                    title="PATCH"
-                    variant="admin"
-                  />
-                </div> */}
+            
 
                 <div>
                   <h4 className="text-sm font-medium text-gray-700 mb-1">

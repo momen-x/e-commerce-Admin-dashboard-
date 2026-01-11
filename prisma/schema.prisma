@@ -105,6 +105,7 @@ model Order {
   isPaid     Boolean
   phone      String
   address    String
+  customerEmail String?
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
 

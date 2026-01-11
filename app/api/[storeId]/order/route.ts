@@ -14,12 +14,7 @@ export async function POST(
   { params }: { params: Promise<{ storeId: string }> }
 ) {
   try {
-    const { userId } = await auth();
     const { storeId } = await params;
-
-    if (!userId) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
 
     if (!storeId) {
       return NextResponse.json(
@@ -30,7 +25,7 @@ export async function POST(
 
     // Verify user owns this store
     const store = await prisma.store.findFirst({
-      where: { id: storeId, userID: userId },
+      where: { id: storeId },
     });
 
     if (!store) {
@@ -50,7 +45,7 @@ export async function POST(
       );
     }
 
-    const {  phone, address, isPaid, orderItems } = validation.data;
+    const { phone, address, isPaid, orderItems } = validation.data;
     await prisma.orderItems.createMany({
       data: orderItems,
     });
