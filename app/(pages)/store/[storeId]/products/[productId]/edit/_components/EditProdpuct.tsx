@@ -56,18 +56,24 @@ const EditProduct = ({
       categoryId: "",
       sizeId: "",
       colorId: "",
+      isFeatured: false,
+      isArchived: false,
     },
   });
 
   // Populate form when product data loads
   useEffect(() => {
     if (product) {
-      form.setValue("name", product.name);
-      form.setValue("price", product.price);
-      form.setValue("categoryId", product.categoryId);
-      form.setValue("sizeId", product.sizeId);
-      form.setValue("colorId", product.colorId);
-      form.setValue("images", product.images);
+      form.reset({
+        name: product.name,
+        price: product.price,
+        categoryId: product.categoryId,
+        sizeId: product.sizeId,
+        colorId: product.colorId,
+        images: product.images,
+        isArchived: product.isArchived || false,
+        isFeatured: product.isFeatured || false,
+      });
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setExistingImages(product.images);
     }
@@ -145,15 +151,54 @@ const EditProduct = ({
     try {
       setLoading(true);
 
+      // Validate that we have at least one image
+      if (!data.images || data.images.length === 0) {
+        toast.error("Please add at least one image");
+        setLoading(false);
+        return;
+      }
+
+      // Validate required fields
+      if (!data.categoryId) {
+        toast.error("Please select a category");
+        setLoading(false);
+        return;
+      }
+
+      if (!data.sizeId) {
+        toast.error("Please select a size");
+        setLoading(false);
+        return;
+      }
+
+      if (!data.colorId) {
+        toast.error("Please select a color");
+        setLoading(false);
+        return;
+      }
+
+      console.log("Submitting update with data:", {
+        storeId,
+        productId,
+        categoryId: data.categoryId,
+        sizeId: data.sizeId,
+        colorId: data.colorId,
+        name: data.name,
+        price: data.price,
+        isFeatured: data.isFeatured,
+        isArchived: data.isArchived,
+        imageCount: data.images.length,
+      });
+
       updateProduct(
         {
           storeId,
           productId,
-          categoryId: data.categoryId || "",
-          sizeId: data.sizeId || "",
-          colorId: data.categoryId || "",
+          categoryId: data.categoryId,
+          sizeId: data.sizeId,
+          colorId: data.colorId, // ✅ FIXED: Now using correct colorId
           name: data.name || "",
-          images: data.images || [],
+          images: data.images,
           price: data.price || 0,
           isFeatured: data.isFeatured || false,
           isArchived: data.isArchived || false,
@@ -164,7 +209,9 @@ const EditProduct = ({
             router.push(`/store/${storeId}/products`);
           },
           onError: (error) => {
+            console.error("Update error:", error);
             toast.error(error.message || "Failed to update product");
+            setLoading(false);
           },
           onSettled: () => {
             setLoading(false);
@@ -172,7 +219,7 @@ const EditProduct = ({
         }
       );
     } catch (error) {
-      console.error(error);
+      console.error("Submit error:", error);
       toast.error("Something went wrong.");
       setLoading(false);
     }
@@ -241,16 +288,20 @@ const EditProduct = ({
             name="price"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Price (in cents) *</FormLabel>
+                <FormLabel>Price (USD) *</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
+                    step="0.01"
                     {...field}
                     onChange={(e) => field.onChange(Number(e.target.value))}
                     disabled={loading}
-                    placeholder="e.g. 1999 (for $19.99)"
+                    placeholder="e.g. 19.99"
                   />
                 </FormControl>
+                <FormDescription>
+                  Enter price in dollars (e.g., 19.99)
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -273,7 +324,7 @@ const EditProduct = ({
                       <Button
                         type="button"
                         onClick={() => removeExistingImage(index)}
-                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 z-10"
+                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 z-10 h-8 w-8"
                         disabled={loading}
                       >
                         <X className="h-4 w-4" />
@@ -302,7 +353,7 @@ const EditProduct = ({
                       <Button
                         type="button"
                         onClick={() => removeNewImage(index)}
-                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 z-10"
+                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 z-10 h-8 w-8"
                         disabled={loading}
                       >
                         <X className="h-4 w-4" />
@@ -326,7 +377,7 @@ const EditProduct = ({
               onChange={handleFileChange}
             />
             <p className="text-xs text-gray-500 mt-1">
-              Upload new images or keep existing ones
+              Upload new images or keep existing ones (Max 5MB per image)
             </p>
 
             {form.formState.errors.images && (
@@ -349,15 +400,9 @@ const EditProduct = ({
                     className="w-full border p-2 rounded"
                     disabled={loading}
                   >
-                    <option value="" className="bg-white dark:bg-gray-600">
-                      Select category
-                    </option>
+                    <option value="">Select category</option>
                     {categories?.map((c) => (
-                      <option
-                        key={c.id}
-                        value={c.id}
-                        className="bg-white dark:bg-gray-600"
-                      >
+                      <option key={c.id} value={c.id}>
                         {c.name}
                       </option>
                     ))}
@@ -381,15 +426,9 @@ const EditProduct = ({
                     className="w-full border p-2 rounded"
                     disabled={loading}
                   >
-                    <option value="" className="bg-white dark:bg-gray-600">
-                      Select size
-                    </option>
+                    <option value="">Select size</option>
                     {sizes?.map((s) => (
-                      <option
-                        key={s.id}
-                        value={s.id}
-                        className="bg-white dark:bg-gray-600"
-                      >
+                      <option key={s.id} value={s.id}>
                         {s.name}
                       </option>
                     ))}
@@ -413,15 +452,9 @@ const EditProduct = ({
                     className="w-full border p-2 rounded"
                     disabled={loading}
                   >
-                    <option value="" className="bg-white dark:bg-gray-600">
-                      Select color
-                    </option>
+                    <option value="">Select color</option>
                     {colors?.map((c) => (
-                      <option
-                        key={c.id}
-                        value={c.id}
-                        className="bg-white dark:bg-gray-600"
-                      >
+                      <option key={c.id} value={c.id}>
                         {c.name}
                       </option>
                     ))}
@@ -432,65 +465,71 @@ const EditProduct = ({
             )}
           />
 
-          <div className="flex items-center space-x-2">
-            <FormField
-              control={form.control}
-              name="isFeatured"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      id="Featured"
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel
-                      htmlFor="Featured"
-                      className="cursor-pointer text-sm font-normal"
-                    >
-                      Featured
-                    </FormLabel>
-                    <FormDescription className="text-xs">
-                      Featured products will appear in the home page
-                    </FormDescription>
-                  </div>
-                </FormItem>
-              )}
-            />
-          </div>
-          <div className="flex items-center space-x-2">
-            <FormField
-              control={form.control}
-              name="isArchived"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      id="isArchived"
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel
-                      htmlFor="isArchived"
-                      className="cursor-pointer text-sm font-normal"
-                    >
-                      Archived
-                    </FormLabel>
-                    <FormDescription className="text-xs">
-                      Archived products won&apos;t appear in your store
-                    </FormDescription>
-                  </div>
-                </FormItem>
-              )}
-            />
-          </div>
+          {/* Featured Checkbox */}
+          <FormField
+            control={form.control}
+            name="isFeatured"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    id="Featured"
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel
+                    htmlFor="Featured"
+                    className="cursor-pointer text-sm font-normal"
+                  >
+                    Featured
+                  </FormLabel>
+                  <FormDescription className="text-xs">
+                    Featured products will appear on the home page
+                  </FormDescription>
+                </div>
+              </FormItem>
+            )}
+          />
+
+          {/* Archived Checkbox */}
+          <FormField
+            control={form.control}
+            name="isArchived"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    id="isArchived"
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel
+                    htmlFor="isArchived"
+                    className="cursor-pointer text-sm font-normal"
+                  >
+                    Archived
+                  </FormLabel>
+                  <FormDescription className="text-xs">
+                    Archived products won&apos;t appear in your store
+                  </FormDescription>
+                </div>
+              </FormItem>
+            )}
+          />
 
           <Button disabled={loading} type="submit" className="w-full">
-            {loading ? "Updating..." : "Update Product"}
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Updating...
+              </>
+            ) : (
+              "Update Product"
+            )}
           </Button>
         </form>
       </Form>
@@ -499,3 +538,4 @@ const EditProduct = ({
 };
 
 export default EditProduct;
+

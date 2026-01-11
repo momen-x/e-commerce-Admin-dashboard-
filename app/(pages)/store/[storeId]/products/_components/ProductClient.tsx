@@ -146,7 +146,7 @@ const ProductClient = () => {
                 {/* Product Info */}
                 <h3 className="font-semibold text-lg mb-1">{product.name}</h3>
                 <p className="text-xl font-bold text-green-600 mb-2">
-                  ${(product.price / 100).toFixed(2)}
+                  ${(product.price ).toFixed(2)}
                 </p>
                 <p className="text-sm text-gray-500">
                   Created: {new Date(product.createdAt).toLocaleDateString()}

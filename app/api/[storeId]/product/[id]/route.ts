@@ -119,20 +119,42 @@ export async function DELETE(
   }
 }
 
+
+/**
+ * @method PATCH
+ * @description edit the product data
+ * @route ~/api/:storeId/product/:productId
+ * @access private just admin can edit this data
+ */
 export async function PATCH(
-  req: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ storeId: string; id: string }> }
 ) {
   try {
     const { userId } = await auth();
     const { storeId, id } = await params;
-
     if (!userId) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
-
+    if (!id || !storeId) {
+      return NextResponse.json(
+        { message: "Product ID or Store ID is required" },
+        { status: 400 }
+      );
+    }
+    const body = await request.json();
+    const validation = UpdateProductSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { message: validation.error?.issues[0].message },
+        { status: 400 }
+      );
+    }
     const store = await prisma.store.findFirst({
-      where: { id: storeId, userID: userId },
+      where: {
+        id: storeId,
+        userID: userId,
+      },
     });
 
     if (!store) {
@@ -141,17 +163,6 @@ export async function PATCH(
         { status: 403 }
       );
     }
-
-    const body = await req.json();
-    const validation = UpdateProductSchema.safeParse(body);
-
-    if (!validation.success) {
-      return NextResponse.json(
-        { message: validation.error.issues[0].message },
-        { status: 400 }
-      );
-    }
-
     const {
       name,
       images,
@@ -162,41 +173,40 @@ export async function PATCH(
       isFeatured,
       isArchived,
     } = validation.data;
-
-    // Upload only NEW images (base64) to Cloudinary
     const uploadedImageUrls: string[] = [];
+    if (!images) {
+      return NextResponse.json(
+        { message: "Images are required" },
+        { status: 200 }
+      );
+    }
+    // Upload all images to Cloudinary
+    for (const imageUrl of images) {
+      const uploadResult = await cloudinary.uploader.upload(imageUrl, {
+        folder: "ecommerce-products",
+        resource_type: "image",
+        transformation: [
+          { width: 2000, height: 1000, crop: "limit" },
+          { quality: "auto:good" },
+          { fetch_format: "auto" },
+        ],
+      });
 
-    for (const imageUrl of images || []) {
-      // If it's already a Cloudinary URL, keep it
-      if (imageUrl.startsWith("http")) {
-        uploadedImageUrls.push(imageUrl);
-      }
-      // If it's base64, upload to Cloudinary
-      else if (imageUrl.startsWith("data:image")) {
-        const uploadResult = await cloudinary.uploader.upload(imageUrl, {
-          folder: "ecommerce-products",
-          resource_type: "image",
-          transformation: [
-            { width: 1200, height: 1200, crop: "limit" },
-            { quality: "auto:good" },
-            { fetch_format: "auto" },
-          ],
-        });
-        uploadedImageUrls.push(uploadResult.secure_url);
-      }
+      uploadedImageUrls.push(uploadResult.secure_url);
     }
 
-    const updatedProduct = await prisma.product.update({
-      where: { id },
+    const product = await prisma.product.update({
+      where: { id: id },
       data: {
-        ...(name && { name }),
-        ...(price && { price }),
-        ...(categoryId && { categoryId }),
-        ...(sizeId && { sizeId }),
-        ...(colorId && { colorId }),
-        ...(isFeatured !== undefined && { isFeatured }),
-        ...(isArchived !== undefined && { isArchived }),
-        ...(uploadedImageUrls.length > 0 && { images: uploadedImageUrls }),
+        name,
+        price,
+        isFeatured: isFeatured ?? false,
+        isArchived: isArchived ?? false,
+        storeId,
+        categoryId,
+        sizeId,
+        colorId,
+        images: uploadedImageUrls,
       },
       include: {
         category: true,
@@ -204,10 +214,8 @@ export async function PATCH(
         color: true,
       },
     });
-
-    return NextResponse.json({ updatedProduct }, { status: 200 });
+    return NextResponse.json({ product }, { status: 200 });
   } catch (error) {
-    console.error("Product update error:", error);
     return NextResponse.json(
       {
         message:

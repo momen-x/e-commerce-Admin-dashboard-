@@ -9,15 +9,16 @@ interface GetOrderResponse {
 
 interface OrderResponse {
   order: {
-      storeId: string;
+    storeId: string;
     id: string;
     createdAt: Date;
     updatedAt: Date;
     isPaid: boolean;
     phone: string;
     address: string;
-    product:{name:string,price:number,id:string},
+    product: { name: string; price: number; id: string };
     orderItems: OrderItems[];
+    customerEmail: string | null;
   };
 }
 

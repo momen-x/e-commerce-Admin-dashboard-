@@ -12,7 +12,7 @@ import toast from "react-hot-toast";
 import { useParams, useRouter } from "next/navigation";
 import { useAddProduct } from "@/Hooks/useProduct";
 import { Button } from "@/components/ui/button";
-import { Form } from "@/components/ui/form";
+import { Form, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
   FormField,
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/form";
 import { ArrowLeft, X } from "lucide-react";
 import Link from "next/link";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const AddNewProduct = () => {
   const params = useParams();
@@ -46,6 +47,8 @@ const AddNewProduct = () => {
       categoryId: "",
       sizeId: "",
       colorId: "",
+      isArchived: false,
+      isFeatured: false,
     },
   });
 
@@ -101,8 +104,6 @@ const AddNewProduct = () => {
   };
 
   const onSubmit = async (data: TAddProduct) => {
-
-
     try {
       setLoading(true);
 
@@ -247,9 +248,15 @@ const AddNewProduct = () => {
                     className="w-full border p-2 rounded"
                     disabled={loading}
                   >
-                    <option value="" className="bg-white dark:bg-gray-600">Select category</option>
+                    <option value="" className="bg-white dark:bg-gray-600">
+                      Select category
+                    </option>
                     {categories?.map((c) => (
-                      <option key={c.id} value={c.id} className="bg-white dark:bg-gray-600">
+                      <option
+                        key={c.id}
+                        value={c.id}
+                        className="bg-white dark:bg-gray-600"
+                      >
                         {c.name}
                       </option>
                     ))}
@@ -273,9 +280,15 @@ const AddNewProduct = () => {
                     className="w-full border p-2 rounded"
                     disabled={loading}
                   >
-                    <option value="" className="bg-white dark:bg-gray-600">Select size</option>
+                    <option value="" className="bg-white dark:bg-gray-600">
+                      Select size
+                    </option>
                     {sizes?.map((s) => (
-                      <option key={s.id} value={s.id} className="bg-white dark:bg-gray-600">
+                      <option
+                        key={s.id}
+                        value={s.id}
+                        className="bg-white dark:bg-gray-600"
+                      >
                         {s.name}
                       </option>
                     ))}
@@ -299,11 +312,16 @@ const AddNewProduct = () => {
                     className="w-full border p-2 rounded"
                     disabled={loading}
                   >
-                    <option value="" className="bg-white dark:bg-gray-600">Select color</option>
+                    <option value="" className="bg-white dark:bg-gray-600">
+                      Select color
+                    </option>
                     {colors?.map((c) => (
-                      <option key={c.id} value={c.id} className="bg-white dark:bg-gray-600">
+                      <option
+                        key={c.id}
+                        value={c.id}
+                        className="bg-white dark:bg-gray-600"
+                      >
                         {c.name}
-                     
                       </option>
                     ))}
                   </select>
@@ -312,6 +330,63 @@ const AddNewProduct = () => {
               </FormItem>
             )}
           />
+
+          <div className="flex items-center space-x-2">
+            <FormField
+              control={form.control}
+              name="isFeatured"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      id="Featured"
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel
+                      htmlFor="Featured"
+                      className="cursor-pointer text-sm font-normal"
+                    >
+                      Featured
+                    </FormLabel>
+                    <FormDescription className="text-xs">
+                      Featured products will appear in the home page
+                    </FormDescription>
+                  </div>
+                </FormItem>
+              )}
+            />
+          </div>
+          <div className="flex items-center space-x-2">
+            <FormField
+              control={form.control}
+              name="isArchived"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      id="isArchived"
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel
+                      htmlFor="isArchived"
+                      className="cursor-pointer text-sm font-normal"
+                    >
+                      Archived
+                    </FormLabel>
+                    <FormDescription className="text-xs">
+                      Archived products won&apos;t appear in your store
+                    </FormDescription>
+                  </div>
+                </FormItem>
+              )}
+            />
+          </div>
 
           <Button disabled={loading} type="submit" className="w-full">
             {loading ? "Creating..." : "Create Product"}
