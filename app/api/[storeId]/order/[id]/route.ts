@@ -95,10 +95,10 @@ export async function DELETE(
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ storeId: string; orderId: string }> }
+  { params }: { params: Promise<{ storeId: string; id: string }> }
 ) {
   try {
-    const { storeId, orderId } = await params;
+    const { storeId, id:orderId } = await params;
 
     console.log("Updating order:", orderId);
 
