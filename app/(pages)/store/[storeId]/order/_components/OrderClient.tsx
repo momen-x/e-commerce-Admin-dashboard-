@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Order } from "@prisma/client";
-import {  Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import {
@@ -31,13 +31,6 @@ import { useRouter } from "next/navigation";
 // Define your columns
 const createColumns = (): ColumnDef<Order>[] => [
   {
-    accessorKey: "name",
-    header: "Name",
-    cell: ({ row }) => (
-      <div className="font-medium">{row.getValue("name")}</div>
-    ),
-  },
-  {
     accessorKey: "phone",
     header: "Phone",
     cell: ({ row }) => (
@@ -51,16 +44,20 @@ const createColumns = (): ColumnDef<Order>[] => [
     accessorKey: "address",
     header: "Address",
     cell: ({ row }) => {
-      const date = new Date(row.getValue("address"));
-      return <div>{date.toLocaleDateString()}</div>;
+      <div
+        className={`h-18 w-18`}
+        style={{ background: row.getValue("address") }}
+      ></div>;
     },
   },
   {
     accessorKey: "isPaid",
     header: "Is Paid",
     cell: ({ row }) => {
-      const date = new Date(row.getValue("isPaid"));
-      return <div>{date.toLocaleDateString()}</div>;
+      <div
+        className={`h-18 w-18`}
+        style={{ background: row.getValue("isPaid") }}
+      ></div>;
     },
   },
 ];
@@ -181,8 +178,7 @@ const OrderClient = () => {
         {/* Table or Empty State */}
         {orders?.length === 0 ? (
           <div className="border border-dashed border-gray-300 rounded-lg p-8 text-center">
-            <div className="mx-auto w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-            </div>
+            <div className="mx-auto w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3"></div>
             <h3 className="font-medium text-lg mb-1">No orders yet</h3>
           </div>
         ) : (

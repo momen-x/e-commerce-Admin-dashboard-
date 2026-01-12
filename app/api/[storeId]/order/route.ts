@@ -91,17 +91,53 @@ export async function POST(
       },
     });
 
-    return NextResponse.json({ Order: completeOrder }, { status: 201 });
+    const response = NextResponse.json(
+      { Order: completeOrder },
+      { status: 201 }
+    );
+
+    // Add CORS headers
+    response.headers.set("Access-Control-Allow-Origin", "*");
+    response.headers.set(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, DELETE, OPTIONS"
+    );
+    response.headers.set(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization"
+    );
+
+    return response;
   } catch (error) {
     console.error("Order creation error:", error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         message:
           error instanceof Error ? error.message : "Something went wrong",
       },
       { status: 500 }
     );
+
+    // Add CORS headers to error response too
+    response.headers.set("Access-Control-Allow-Origin", "*");
+
+    return response;
   }
+}
+
+/**
+ * @method OPTIONS
+ * @description Handle CORS preflight
+ */
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  });
 }
 
 /**
