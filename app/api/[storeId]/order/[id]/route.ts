@@ -1,5 +1,4 @@
 import prisma from "@/lib/prisma";
-import { updateOrderSchma } from "@/Validations/validation";
 // import { updateOrderSchma } from "@/Validations/validation";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -90,101 +89,136 @@ export async function DELETE(
 
 /**
  * @method PATCH
- * @description update a order
- * @route ~/api/[:storeId]/order/[:id]
- * @access private
+ * @description Update an existing order (mark as paid and add order items)
+ * @route ~/api/[storeId]/order/[orderId]
+ * @access Public (for webhook)
  */
 export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ storeId: string; id: string }> }
+  req: NextRequest,
+  { params }: { params: Promise<{ storeId: string; orderId: string }> }
 ) {
   try {
-    const { id, storeId } = await params;
-    // const body = await request.json();
+    const { storeId, orderId } = await params;
 
-    const existingOrder = await prisma.order.findFirst({
-      where: {
-        id: id,
-        storeId: storeId,
-      },
-    });
-    if (!existingOrder) {
-      return NextResponse.json(
-        { message: "the order not found !!" },
-        { status: 404 }
-      );
-    }
-    // const validation = updateOrderSchma.safeParse(body);
-    // if (!validation.success) {
-    //   const errors = validation.error.issues.map((err) => err.message);
-    //   return NextResponse.json(
-    //     { message: "Validation failed", errors },
-    //     { status: 400 }
-    //   );
-    // }
+    console.log("Updating order:", orderId);
 
-    if (!id || !storeId) {
+    if (!storeId || !orderId) {
       return NextResponse.json(
-        { message: "Order ID is required" },
+        { message: "Store ID and Order ID are required" },
         { status: 400 }
       );
     }
-    // const {productId,isPaid } = validation.data;
 
-    const body = await request.json();
+    // Verify store exists
+    const store = await prisma.store.findFirst({
+      where: { id: storeId },
+    });
+
+    if (!store) {
+      return NextResponse.json({ message: "Store not found" }, { status: 404 });
+    }
+
+    // Verify order exists
+    const existingOrder = await prisma.order.findFirst({
+      where: {
+        id: orderId,
+        storeId: storeId,
+      },
+    });
+
+    if (!existingOrder) {
+      return NextResponse.json({ message: "Order not found" }, { status: 404 });
+    }
+
+    const body = await req.json();
+    console.log("Update body:", body);
+
     const { isPaid, orderItems } = body;
 
-    const updatedOrder = await prisma.$transaction(async (tx) => {
-      // Update the order
-      const order = await tx.order.update({
-        where: { id: id },
-        data: {
-          isPaid: isPaid !== undefined ? isPaid : existingOrder.isPaid,
-        },
+    // Update order
+    const updatedOrder = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        isPaid: isPaid !== undefined ? isPaid : existingOrder.isPaid,
+      },
+    });
+
+    console.log("Order updated:", updatedOrder.id);
+
+    // Add order items if provided
+    if (orderItems && Array.isArray(orderItems) && orderItems.length > 0) {
+      // Delete existing order items first (if any)
+      await prisma.orderItems.deleteMany({
+        where: { orderId: orderId },
       });
 
-      // If orderItems are provided, create them
-      if (orderItems && Array.isArray(orderItems) && orderItems.length > 0) {
-        // First, delete any existing order items (in case of retry)
-        await tx.orderItems.deleteMany({
-          where: { orderId: id },
-        });
+      // Create new order items
+      await prisma.orderItems.createMany({
+        data: orderItems.map((item: any) => ({
+          orderId: orderId,
+          productId: item.productId,
+          quantity: item.quantity,
+        })),
+      });
 
-        // Then create new order items
-        await tx.orderItems.createMany({
-          data: orderItems.map(
-            (item: { productId: string; quantity: number }) => ({
-              orderId: id,
-              productId: item.productId,
-              quantity: item.quantity,
-            })
-          ),
-        });
-      }
+      console.log("Order items added:", orderItems.length);
+    }
 
-      // Return the complete order with items
-      return tx.order.findUnique({
-        where: { id },
-        include: {
-          orderItems: {
-            include: {
-              product: true,
-            },
+    // Fetch complete updated order
+    const completeOrder = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        orderItems: {
+          include: {
+            product: true,
           },
         },
-      });
+      },
     });
-    return NextResponse.json(
-      { message: "Order updated", updatedOrder },
+
+    const response = NextResponse.json(
+      { Order: completeOrder },
       { status: 200 }
     );
+
+    // Add CORS headers
+    response.headers.set("Access-Control-Allow-Origin", "*");
+    response.headers.set(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    );
+    response.headers.set(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization"
+    );
+
+    return response;
   } catch (error) {
-    return NextResponse.json(
+    console.error("Order update error:", error);
+    const response = NextResponse.json(
       {
         message:
           error instanceof Error ? error.message : "Something went wrong",
       },
       { status: 500 }
     );
+
+    response.headers.set("Access-Control-Allow-Origin", "*");
+    return response;
   }
+}
+
+/**
+ * @method OPTIONS
+ * @description Handle CORS preflight
+ */
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  });
 }

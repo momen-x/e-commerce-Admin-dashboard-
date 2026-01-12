@@ -74,22 +74,25 @@ export const UpdateProductSchema = AddProductSchema.partial();
 export type TUpdateProduct = z.infer<typeof UpdateProductSchema>;
 
 export const AddOrderSchema = z.object({
-  storeId: z.string().min(1, "Store ID is required"),
-  productId: z.string().min(1, "Product ID is required"),
+  // Remove storeId and productId as they're not needed in the body
   isPaid: z.boolean().default(false).optional(),
   phone: z.string().optional(),
   address: z.string().optional(),
-  orderItems: z.array(
-    z.object({
-      orderId: z.string().min(1, "the order id is re  "),
-      productId: z.string().min(1, "Product ID is required"),
-      quantity: z.number().min(1, "Quantity must be greater than 0"),
-    })
-  ),
+  customerEmail: z.string().email().optional(),
+  orderItems: z
+    .array(
+      z.object({
+        productId: z.string().min(1, "Product ID is required"),
+        quantity: z.number().min(1, "Quantity must be greater than 0"),
+      })
+    )
+    .default([]), // Make it optional with default empty array
 });
+
 type TAddOrder = z.infer<typeof AddOrderSchema>;
-export const updateOrderSchma = AddOrderSchema.partial();
-type TUpdateOrder = z.infer<typeof updateOrderSchma>;
+
+export const updateOrderSchema = AddOrderSchema.partial();
+type TUpdateOrder = z.infer<typeof updateOrderSchema>;
 
 export type { TAddCategory };
 export type { TAddBillboards };

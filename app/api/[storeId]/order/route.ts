@@ -1,13 +1,13 @@
+// app/api/[storeId]/order/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { AddOrderSchema } from "@/Validations/validation";
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
 
 /**
  * @method POST
  * @description Create a new Order for a store
- * @route ~/api/[:storeId]/Order
- * @access Private (Requires authentication)
+ * @route ~/api/[:storeId]/order
+ * @access Public (for customer orders)
  */
 export async function POST(
   req: NextRequest,
@@ -16,6 +16,8 @@ export async function POST(
   try {
     const { storeId } = await params;
 
+    console.log("Received order creation request for store:", storeId);
+
     if (!storeId) {
       return NextResponse.json(
         { message: "Store ID is required" },
@@ -23,46 +25,73 @@ export async function POST(
       );
     }
 
-    // Verify user owns this store
+    // Verify store exists
     const store = await prisma.store.findFirst({
       where: { id: storeId },
     });
 
     if (!store) {
-      return NextResponse.json(
-        { message: "Store not found or unauthorized" },
-        { status: 403 }
-      );
+      return NextResponse.json({ message: "Store not found" }, { status: 404 });
     }
 
     const body = await req.json();
+    console.log("Request body:", body);
+
     const validation = AddOrderSchema.safeParse(body);
 
     if (!validation.success) {
+      console.error("Validation error:", validation.error.issues);
       return NextResponse.json(
-        { message: validation.error.issues[0].message },
+        {
+          message: validation.error.issues[0].message,
+          errors: validation.error.issues,
+        },
         { status: 400 }
       );
     }
 
-    const { phone, address, isPaid, orderItems } = validation.data;
-    await prisma.orderItems.createMany({
-      data: orderItems,
-    });
+    const { phone, address, isPaid, orderItems, customerEmail } =
+      validation.data;
 
-    const Order = await prisma.order.create({
+    // Create order first
+    const order = await prisma.order.create({
       data: {
         storeId,
         phone: phone || "",
         address: address || "",
+        customerEmail: customerEmail || "",
         isPaid: isPaid || false,
-      },
-      include: {
-        orderItems: true,
       },
     });
 
-    return NextResponse.json({ Order }, { status: 201 });
+    console.log("Order created:", order.id);
+
+    // Create order items if provided
+    if (orderItems && orderItems.length > 0) {
+      await prisma.orderItems.createMany({
+        data: orderItems.map((item) => ({
+          orderId: order.id,
+          productId: item.productId,
+          quantity: item.quantity,
+        })),
+      });
+
+      console.log("Order items created:", orderItems.length);
+    }
+
+    // Fetch complete order with items
+    const completeOrder = await prisma.order.findUnique({
+      where: { id: order.id },
+      include: {
+        orderItems: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({ Order: completeOrder }, { status: 201 });
   } catch (error) {
     console.error("Order creation error:", error);
     return NextResponse.json(
@@ -77,9 +106,9 @@ export async function POST(
 
 /**
  * @method GET
- * @route ~/api/[:storeId]/Order
- * @description Retrieve all Order for a specific store.
- * @access public
+ * @route ~/api/[:storeId]/order
+ * @description Retrieve all orders for a specific store
+ * @access Public
  */
 export async function GET(
   req: NextRequest,
@@ -87,6 +116,7 @@ export async function GET(
 ) {
   try {
     const { storeId } = await params;
+
     if (!storeId) {
       return NextResponse.json(
         { message: "Store ID is required" },
@@ -94,17 +124,31 @@ export async function GET(
       );
     }
 
-    const isUserHaveTheStore = await prisma.store.findFirst({
+    const store = await prisma.store.findFirst({
       where: { id: storeId },
     });
-    if (!isUserHaveTheStore) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+
+    if (!store) {
+      return NextResponse.json({ message: "Store not found" }, { status: 404 });
     }
+
     const orders = await prisma.order.findMany({
-      where: { storeId: storeId },
+      where: { storeId },
+      include: {
+        orderItems: {
+          include: {
+            product: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
+
     return NextResponse.json({ orders }, { status: 200 });
   } catch (error) {
+    console.error("Error fetching orders:", error);
     return NextResponse.json(
       {
         message:
